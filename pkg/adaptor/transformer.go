@@ -20,6 +20,7 @@ type Transformer struct {
 
 	pipe *pipe.Pipe
 	path string
+	ns   string
 
 	debug  bool
 	script *otto.Script
@@ -42,6 +43,8 @@ func NewTransformer(pipe *pipe.Pipe, path string, extra Config) (StopStartListen
 		return t, fmt.Errorf("no filename specified")
 	}
 
+	t.ns = conf.Namespace
+
 	ba, err := ioutil.ReadFile(conf.Filename)
 	if err != nil {
 		return t, err
@@ -60,7 +63,7 @@ func (t *Transformer) Listen() (err error) {
 		return err
 	}
 
-	return t.pipe.Listen(t.transformOne)
+	return t.pipe.Listen(t.ns, t.transformOne)
 }
 
 // initEvironment prepares the javascript vm and compiles the transformer script
@@ -201,7 +204,8 @@ func (t *Transformer) transformerError(lvl ErrorLevel, err error, msg *message.M
 type TransformerConfig struct {
 	// file containing transformer javascript
 	// must define a module.exports = function(doc) { .....; return doc }
-	Filename string `json:"filename" doc:"the filename containing the javascript transform fn"`
+	Filename  string `json:"filename" doc:"the filename containing the javascript transform fn"`
+	Namespace string `json:"namespace" doc:"namespace to transform"`
 
 	// verbose output
 	Debug bool `json:"debug" doc:"display debug information"` // debug mode

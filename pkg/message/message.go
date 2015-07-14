@@ -20,15 +20,17 @@ type Msg struct {
 	Timestamp int64
 	Op        OpType
 	Data      interface{}
+	Namespace string
 }
 
 // NewMsg returns a new Msg with the ID extracted
 // from the original document
-func NewMsg(op OpType, data interface{}) *Msg {
+func NewMsg(op OpType, data interface{}, namespace string) *Msg {
 	m := &Msg{
 		Timestamp: time.Now().Unix(),
 		Op:        op,
 		Data:      data,
+		Namespace: namespace,
 	}
 
 	return m

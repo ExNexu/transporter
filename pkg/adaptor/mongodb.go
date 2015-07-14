@@ -175,7 +175,7 @@ func (m *Mongodb) Listen() (err error) {
 	if m.bulk {
 		go m.bulkWriter()
 	}
-	return m.pipe.Listen(m.writeMessage)
+	return m.pipe.Listen(m.getNamespace(), m.writeMessage)
 }
 
 // Stop the adaptor
@@ -305,7 +305,7 @@ func (m *Mongodb) catData() (err error) {
 			}
 
 			// set up the message
-			msg := message.NewMsg(message.Insert, result)
+			msg := message.NewMsg(message.Insert, result, m.getNamespace())
 
 			m.pipe.Send(msg)
 			result = bson.M{}
@@ -368,7 +368,7 @@ func (m *Mongodb) tailData() (err error) {
 					continue
 				}
 
-				msg := message.NewMsg(message.OpTypeFromString(result.Op), doc)
+				msg := message.NewMsg(message.OpTypeFromString(result.Op), doc, m.getNamespace())
 				msg.Timestamp = int64(result.Ts) >> 32
 
 				m.oplogTime = result.Ts

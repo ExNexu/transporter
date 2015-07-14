@@ -80,7 +80,7 @@ func (e *Elasticsearch) Listen() error {
 		}
 	}()
 
-	return e.pipe.Listen(e.applyOp)
+	return e.pipe.Listen(e.getNamespace(), e.applyOp)
 }
 
 // Stop the adaptor

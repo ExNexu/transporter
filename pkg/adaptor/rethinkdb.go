@@ -208,7 +208,7 @@ func (r *Rethinkdb) sendAllDocuments() error {
 			return nil
 		}
 
-		msg := message.NewMsg(message.Insert, r.prepareDocument(doc))
+		msg := message.NewMsg(message.Insert, r.prepareDocument(doc), r.getNamespace())
 		r.pipe.Send(msg)
 	}
 
@@ -238,11 +238,11 @@ func (r *Rethinkdb) sendChanges(ccursor *gorethink.Cursor) error {
 		if change.Error != "" {
 			return errors.New(change.Error)
 		} else if change.OldVal != nil && change.NewVal != nil {
-			msg = message.NewMsg(message.Update, r.prepareDocument(change.NewVal))
+			msg = message.NewMsg(message.Update, r.prepareDocument(change.NewVal), r.getNamespace())
 		} else if change.NewVal != nil {
-			msg = message.NewMsg(message.Insert, r.prepareDocument(change.NewVal))
+			msg = message.NewMsg(message.Insert, r.prepareDocument(change.NewVal), r.getNamespace())
 		} else if change.OldVal != nil {
-			msg = message.NewMsg(message.Delete, r.prepareDocument(change.OldVal))
+			msg = message.NewMsg(message.Delete, r.prepareDocument(change.OldVal), r.getNamespace())
 		}
 
 		if msg != nil {
@@ -256,6 +256,10 @@ func (r *Rethinkdb) sendChanges(ccursor *gorethink.Cursor) error {
 	}
 
 	return nil
+}
+
+func (r *Rethinkdb) getNamespace() string {
+	return strings.Join([]string{r.database, r.table}, ".")
 }
 
 // prepareDocument moves the `id` field to the `_id` field, which is more
@@ -272,7 +276,7 @@ func (r *Rethinkdb) prepareDocument(doc map[string]interface{}) map[string]inter
 // Listen start's the adaptor's listener
 func (r *Rethinkdb) Listen() (err error) {
 	r.recreateTable()
-	return r.pipe.Listen(r.applyOp)
+	return r.pipe.Listen(r.getNamespace(), r.applyOp)
 }
 
 // Stop the adaptor

@@ -7,6 +7,7 @@
 package pipe
 
 import (
+	"regexp"
 	"time"
 
 	"github.com/compose/transporter/pkg/events"
@@ -65,7 +66,7 @@ func NewPipe(pipe *Pipe, path string) *Pipe {
 // Listen starts a listening loop that pulls messages from the In chan, applies fn(msg), a `func(message.Msg) error`, and emits them on the Out channel.
 // Errors will be emited to the Pipe's Err chan, and will terminate the loop.
 // The listening loop can be interupted by calls to Stop().
-func (m *Pipe) Listen(fn func(*message.Msg) (*message.Msg, error)) error {
+func (m *Pipe) Listen(namespace string, fn func(*message.Msg) (*message.Msg, error)) error {
 	if m.In == nil {
 		return nil
 	}
@@ -84,16 +85,18 @@ func (m *Pipe) Listen(fn func(*message.Msg) (*message.Msg, error)) error {
 
 		select {
 		case msg := <-m.In:
-
-			outmsg, err := fn(msg)
-			if err != nil {
-				m.Err <- err
-				return err
-			}
-			if len(m.Out) > 0 {
-				m.Send(outmsg)
-			} else {
-				m.MessageCount++ // update the count anyway
+			matched, err := regexp.MatchString(namespace, msg.Namespace)
+			if matched && err == nil {
+				outmsg, err := fn(msg)
+				if err != nil {
+					m.Err <- err
+					return err
+				}
+				if len(m.Out) > 0 {
+					m.Send(outmsg)
+				} else {
+					m.MessageCount++ // update the count anyway
+				}
 			}
 		case <-time.After(100 * time.Millisecond):
 			// NOP, just breath
